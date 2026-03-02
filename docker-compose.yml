@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ssm-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: duty_db
+      MYSQL_USER: duty_user
+      MYSQL_PASSWORD: duty_pass
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: ssm-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  minio:
+    image: minio/minio:latest
+    container_name: ssm-minio
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minio
+      MINIO_ROOT_PASSWORD: miniopass
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api.Dockerfile
+    container_name: ssm-api
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - rabbitmq
+      - minio
+    env_file:
+      - src/.env.example
+    ports:
+      - "8080:8080"
+    command: npm run start
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker.Dockerfile
+    container_name: ssm-worker
+    restart: unless-stopped
+    depends_on:
+      - mysql
+      - rabbitmq
+      - minio
+    env_file:
+      - src/.env.example
+    command: npm run worker:ocr
+
+volumes:
+  minio_data:
