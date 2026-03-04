@@ -1,13 +1,11 @@
 'use strict';
 
-module.exports = (router) => {
-  router.get('/:imageId/cells', (req, res) => {
-    res.status(501).json({ error: 'Review cells endpoint not implemented' });
-  });
-  router.post('/:ocrCellId/fix', (req, res) => {
-    res.status(501).json({ error: 'Fix cell endpoint not implemented' });
-  });
-  router.post('/:imageId/approve', (req, res) => {
-    res.status(501).json({ error: 'Approve endpoint not implemented' });
-  });
-};
+var express = require('express');
+var router = express.Router();
+var reviewController = require('../controllers/review.controller');
+
+router.get('/:imageId/cells', reviewController.getCells);
+router.post('/:ocrCellId/fix', reviewController.fixCell);
+router.post('/:imageId/approve', reviewController.approveRoster);
+
+module.exports = router;
