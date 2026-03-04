@@ -3,9 +3,11 @@
 const path = require('path');
 const express = require('express');
 const multer = require('multer');
-const config = require('./shared/config/env');
 
-const uploadController = require('./controllers/upload.controller');
+// Load config with correct path
+const config = require(path.resolve(__dirname, '../shared/config/env'));
+
+const uploadController = require(path.resolve(__dirname, './controllers/upload.controller'));
 
 const app = express();
 const upload = multer({ 
