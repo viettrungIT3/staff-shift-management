@@ -9,6 +9,7 @@ var config = require(path.resolve(__dirname, '../shared/config/env'));
 var uploadController = require('./controllers/upload.controller');
 var reviewRoutes = require('./routes/review.route');
 var reportRoutes = require('./routes/report.route');
+var validator = require('./middleware/validator');
 
 var app = express();
 var upload = multer({ 
@@ -23,7 +24,7 @@ app.get('/health', function(req, res) {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.post('/api/v1/rosters/upload', upload.single('image'), uploadController.uploadRoster);
+app.post('/api/v1/rosters/upload', upload.single('image'), validator.validateUpload, uploadController.uploadRoster);
 app.post('/api/v1/rosters/:imageId/process', uploadController.processRoster);
 
 app.use('/api/v1/review', reviewRoutes);

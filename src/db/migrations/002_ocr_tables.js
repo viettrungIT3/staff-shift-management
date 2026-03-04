@@ -1,9 +1,8 @@
 'use strict';
 
-/** @param {import('knex').Knex} knex */
-exports.up = async function up(knex) {
-  await knex.schema.createTable('roster_images', (table) => {
-    table.bigIncrements('image_id').primary();
+exports.up = async function(knex) {
+  await knex.schema.createTable('roster_images', function(table) {
+    table.string('image_id', 36).primary();
     table.enu('source_type', ['scan', 'photo', 'upload']).notNullable().defaultTo('photo');
     table.string('file_url', 1024).notNullable();
     table.dateTime('captured_at').nullable();
@@ -14,9 +13,9 @@ exports.up = async function up(knex) {
     table.decimal('overall_confidence', 5, 4).nullable();
   });
 
-  await knex.schema.createTable('ocr_cells', (table) => {
+  await knex.schema.createTable('ocr_cells', function(table) {
     table.bigIncrements('ocr_cell_id').primary();
-    table.bigInteger('image_id').unsigned().notNullable();
+    table.string('image_id', 36).notNullable();
     table.integer('row_index').notNullable();
     table.integer('col_index').notNullable();
     table.integer('bbox_x').notNullable();
@@ -30,15 +29,14 @@ exports.up = async function up(knex) {
     table.enu('mapping_status', ['mapped', 'unmapped', 'ambiguous', 'manual_fixed']).notNullable().defaultTo('unmapped');
     table.dateTime('created_at').notNullable().defaultTo(knex.fn.now());
 
-    table.foreign('image_id').references('roster_images.image_id');
-    table.foreign('mapped_employee_id').references('employees.employee_id');
+    table.foreign('image_id').references('roster_images.image_id').onDelete('CASCADE');
+    table.foreign('mapped_employee_id').references('employees.employee_id').onDelete('SET NULL');
     table.index(['image_id'], 'idx_ocr_cells_image');
     table.index(['mapping_status'], 'idx_ocr_cells_map_status');
   });
 };
 
-/** @param {import('knex').Knex} knex */
-exports.down = async function down(knex) {
+exports.down = async function(knex) {
   await knex.schema.dropTableIfExists('ocr_cells');
   await knex.schema.dropTableIfExists('roster_images');
 };

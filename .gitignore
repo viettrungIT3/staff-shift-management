@@ -25,3 +25,4 @@ coverage/
 # Runtime data
 data/mysql/*
 !data/mysql/.gitkeep
+data/images/test/*
