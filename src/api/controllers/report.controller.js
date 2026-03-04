@@ -1,96 +1,135 @@
 'use strict';
 
-/**
- * Get monthly shift statistics
- * GET /api/v1/reports/monthly?year=2026&month=3
- */
+var db = require('../../shared/db');
+
 async function getMonthlyReport(req, res, next) {
   try {
     var year = parseInt(req.query.year) || new Date().getFullYear();
     var month = parseInt(req.query.month) || (new Date().getMonth() + 1);
     
-    // TODO: Query from DB
-    // Mock data for now
-    var mockData = {
+    var startDate = new Date(year, month - 1, 1);
+    var endDate = new Date(year, month, 0);
+    
+    // Get employee stats
+    var employeeStats = await db('duty_assignments as da')
+      .join('employees as e', 'da.employee_id', 'e.employee_id')
+      .select(
+        'e.employee_id',
+        'e.employee_code',
+        'e.full_name'
+      )
+      .count('* as totalShifts')
+      .where('da.duty_date', '>=', startDate)
+      .where('da.duty_date', '<=', endDate)
+      .where('da.status', 'confirmed')
+      .groupBy('e.employee_id', 'e.employee_code', 'e.full_name')
+      .orderBy('totalShifts', 'desc');
+    
+    // Get position stats
+    var positionStats = await db('duty_assignments as da')
+      .join('positions as p', 'da.position_id', 'p.position_id')
+      .select('p.position_code', 'p.position_name')
+      .count('* as totalShifts')
+      .where('da.duty_date', '>=', startDate)
+      .where('da.duty_date', '<=', endDate)
+      .where('da.status', 'confirmed')
+      .groupBy('p.position_code', 'p.position_name');
+    
+    // Get shift stats
+    var shiftStats = await db('duty_assignments as da')
+      .join('shifts as s', 'da.shift_id', 's.shift_id')
+      .select('s.shift_code', 's.shift_name')
+      .count('* as totalShifts')
+      .where('da.duty_date', '>=', startDate)
+      .where('da.duty_date', '<=', endDate)
+      .where('da.status', 'confirmed')
+      .groupBy('s.shift_code', 's.shift_name');
+    
+    var totalShifts = employeeStats.reduce(function(sum, e) { return sum + parseInt(e.totalShifts); }, 0);
+    
+    res.json({
       year: year,
       month: month,
-      totalShifts: 120,
-      employeeStats: [
-        { employeeId: 1, employeeCode: 'EMP001', fullName: 'An A', totalShifts: 15 },
-        { employeeId: 2, employeeCode: 'EMP002', fullName: 'An B', totalShifts: 12 },
-        { employeeId: 3, employeeCode: 'EMP003', fullName: 'Binh B', totalShifts: 10 }
-      ],
-      positionStats: [
-        { positionCode: 'C_TRAI', positionName: 'C.trai', totalShifts: 30 },
-        { positionCode: 'CHOI_1', positionName: 'Choi 1', totalShifts: 30 },
-        { positionCode: 'CHOI_2', positionName: 'Choi 2', totalShifts: 30 },
-        { positionCode: 'CHOI_3', positionName: 'Choi 3', totalShifts: 15 },
-        { positionCode: 'CHOI_4', positionName: 'Choi 4', totalShifts: 15 }
-      ],
-      shiftStats: [
-        { shiftCode: 'CA_1', shiftName: 'Ca 1', totalShifts: 30 },
-        { shiftCode: 'CA_2', shiftName: 'Ca 2', totalShifts: 30 },
-        { shiftCode: 'CA_3', shiftName: 'Ca 3', totalShifts: 30 },
-        { shiftCode: 'CA_4', shiftName: 'Ca 4', totalShifts: 30 }
-      ]
-    };
-    
-    res.json(mockData);
+      totalShifts: totalShifts,
+      employeeStats: employeeStats,
+      positionStats: positionStats,
+      shiftStats: shiftStats
+    });
   } catch (err) {
     next(err);
   }
 }
 
-/**
- * Get summary statistics
- * GET /api/v1/reports/summary
- */
 async function getSummary(req, res, next) {
   try {
-    // TODO: Query from DB
-    var mockSummary = {
-      totalEmployees: 29,
-      totalPositions: 5,
-      totalShifts: 4,
-      totalAssignments: 156,
-      thisMonthShifts: 120,
-      avgShiftsPerEmployee: 4.1,
-      mostActiveEmployee: { employeeCode: 'EMP001', fullName: 'An A', totalShifts: 15 },
-      mostPopularPosition: { positionCode: 'C_TRAI', positionName: 'C.trai', totalShifts: 30 }
-    };
+    var totalEmployees = await db('employees').count('* as count').first();
+    var totalPositions = await db('positions').count('* as count').first();
+    var totalShifts = await db('shifts').count('* as count').first();
+    var totalAssignments = await db('duty_assignments').count('* as count').first();
     
-    res.json(mockSummary);
+    var mostActive = await db('duty_assignments as da')
+      .join('employees as e', 'da.employee_id', 'e.employee_id')
+      .select('e.employee_code', 'e.full_name')
+      .count('* as total')
+      .where('da.status', 'confirmed')
+      .groupBy('e.employee_code', 'e.full_name')
+      .orderBy('total', 'desc')
+      .limit(1)
+      .first();
+    
+    var mostPopular = await db('duty_assignments as da')
+      .join('positions as p', 'da.position_id', 'p.position_id')
+      .select('p.position_code', 'p.position_name')
+      .count('* as total')
+      .where('da.status', 'confirmed')
+      .groupBy('p.position_code', 'p.position_name')
+      .orderBy('total', 'desc')
+      .limit(1)
+      .first();
+    
+    res.json({
+      totalEmployees: parseInt(totalEmployees.count),
+      totalPositions: parseInt(totalPositions.count),
+      totalShifts: parseInt(totalShifts.count),
+      totalAssignments: parseInt(totalAssignments.count),
+      mostActiveEmployee: mostActive || null,
+      mostPopularPosition: mostPopular || null
+    });
   } catch (err) {
     next(err);
   }
 }
 
-/**
- * Get employee shift history
- * GET /api/v1/reports/employee/:employeeId
- */
 async function getEmployeeHistory(req, res, next) {
   try {
     var employeeId = req.params.employeeId;
     
-    // TODO: Query from DB
-    var mockHistory = {
-      employeeId: employeeId,
-      assignments: [
-        { dutyDate: '2026-03-01', shiftCode: 'CA_1', positionCode: 'C_TRAI', status: 'confirmed' },
-        { dutyDate: '2026-03-02', shiftCode: 'CA_2', positionCode: 'CHOI_1', status: 'confirmed' },
-        { dutyDate: '2026-03-03', shiftCode: 'CA_3', positionCode: 'CHOI_2', status: 'confirmed' }
-      ]
-    };
+    var assignments = await db('duty_assignments as da')
+      .join('shifts as s', 'da.shift_id', 's.shift_id')
+      .join('positions as p', 'da.position_id', 'p.position_id')
+      .select(
+        'da.duty_date',
+        's.shift_code',
+        's.shift_name',
+        'p.position_code',
+        'p.position_name',
+        'da.status'
+      )
+      .where('da.employee_id', employeeId)
+      .orderBy('da.duty_date', 'desc')
+      .limit(50);
     
-    res.json(mockHistory);
+    res.json({
+      employeeId: employeeId,
+      assignments: assignments
+    });
   } catch (err) {
     next(err);
   }
 }
 
 module.exports = {
-  getMonthlyReport,
-  getSummary,
-  getEmployeeHistory
+  getMonthlyReport: getMonthlyReport,
+  getSummary: getSummary,
+  getEmployeeHistory: getEmployeeHistory
 };
