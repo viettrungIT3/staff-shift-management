@@ -4,7 +4,7 @@ var path = require('path');
 var express = require('express');
 var multer = require('multer');
 
-var config = require(path.resolve(__dirname, './shared/config/env'));
+var config = require(path.resolve(__dirname, '../shared/config/env'));
 
 var uploadController = require('./controllers/upload.controller');
 var reviewRoutes = require('./routes/review.route');
