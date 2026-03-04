@@ -1,7 +1,11 @@
 'use strict';
 
+const path = require('path');
 const express = require('express');
-const config = require('./shared/config/env');
+
+// Load config
+const envPath = path.resolve(__dirname, '../shared/config/env');
+const config = require(envPath);
 
 const app = express();
 
@@ -15,13 +19,13 @@ app.get('/health', (_req, res) => {
 });
 
 // Routes (placeholder)
-app.use('/api/v1/rosters', (req, res) => {
+app.use('/api/v1/rosters', (_req, res) => {
   res.status(501).json({ error: 'Not implemented' });
 });
-app.use('/api/v1/review', (req, res) => {
+app.use('/api/v1/review', (_req, res) => {
   res.status(501).json({ error: 'Not implemented' });
 });
-app.use('/api/v1/reports', (req, res) => {
+app.use('/api/v1/reports', (_req, res) => {
   res.status(501).json({ error: 'Not implemented' });
 });
 
@@ -31,7 +35,7 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-const PORT = Number(process.env.PORT || 8080);
+const PORT = config.port;
 const server = app.listen(PORT, () => {
   console.log(`API listening on port ${PORT}`);
 });
