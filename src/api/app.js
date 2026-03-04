@@ -2,12 +2,18 @@
 
 const path = require('path');
 const express = require('express');
+const multer = require('multer');
 
-// Load config
-const envPath = path.resolve(__dirname, '../shared/config/env');
-const config = require(envPath);
+// Load config with correct path
+const config = require(path.resolve(__dirname, '../shared/config/env'));
+
+const uploadController = require(path.resolve(__dirname, './controllers/upload.controller'));
 
 const app = express();
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
 
 // Middleware
 app.use(express.json());
@@ -18,10 +24,10 @@ app.get('/health', (_req, res) => {
   res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Routes (placeholder)
-app.use('/api/v1/rosters', (_req, res) => {
-  res.status(501).json({ error: 'Not implemented' });
-});
+// Routes
+app.post('/api/v1/rosters/upload', upload.single('image'), uploadController.uploadRoster);
+app.post('/api/v1/rosters/:imageId/process', uploadController.processRoster);
+
 app.use('/api/v1/review', (_req, res) => {
   res.status(501).json({ error: 'Not implemented' });
 });
