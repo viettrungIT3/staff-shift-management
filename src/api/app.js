@@ -4,7 +4,8 @@ var path = require('path');
 var express = require('express');
 var multer = require('multer');
 
-var config = require(path.resolve(__dirname, '../shared/config/env'));
+var config = require(path.resolve(__dirname, './shared/config/env'));
+var health = require('./shared/health');
 
 var uploadController = require('./controllers/upload.controller');
 var reviewRoutes = require('./routes/review.route');
@@ -20,8 +21,21 @@ var upload = multer({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/health', function(req, res) {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+// Health check endpoint
+app.get('/health', async function(req, res) {
+  var healthStatus = await health.getHealthStatus();
+  var statusCode = healthStatus.status === 'ok' ? 200 : 503;
+  res.status(statusCode).json(healthStatus);
+});
+
+// Readiness check
+app.get('/ready', async function(req, res) {
+  var dbHealth = await health.checkDatabase();
+  if (dbHealth.status === 'healthy') {
+    res.status(200).json({ status: 'ready' });
+  } else {
+    res.status(503).json({ status: 'not ready', error: dbHealth.error });
+  }
 });
 
 app.post('/api/v1/rosters/upload', upload.single('image'), validator.validateUpload, uploadController.uploadRoster);
@@ -37,11 +51,7 @@ app.use(function(err, req, res, next) {
 
 var PORT = config.port;
 var server = app.listen(PORT, function() {
-  console.log('API listening on port ' + PORT);
-});
-
-var shutdown = function(signal) {
-  console.log('Received ' + signal + ', shutting down API...');
+  console.log('API listening on port ' + PORT + ' in ' + config.nodeEnv + '  console.log('API listening on port ' + PORT + ' ionsole.log('Received ' + signal + ', shutting down API...');
   server.close(function() {
     console.log('API shutdown complete');
     process.exit(0);
