@@ -8,6 +8,7 @@ var config = require(path.resolve(__dirname, '../shared/config/env'));
 
 var uploadController = require('./controllers/upload.controller');
 var reviewRoutes = require('./routes/review.route');
+var reportRoutes = require('./routes/report.route');
 
 var app = express();
 var upload = multer({ 
@@ -26,10 +27,7 @@ app.post('/api/v1/rosters/upload', upload.single('image'), uploadController.uplo
 app.post('/api/v1/rosters/:imageId/process', uploadController.processRoster);
 
 app.use('/api/v1/review', reviewRoutes);
-
-app.use('/api/v1/reports', function(req, res) {
-  res.status(501).json({ error: 'Not implemented' });
-});
+app.use('/api/v1/reports', reportRoutes);
 
 app.use(function(err, req, res, next) {
   console.error('Unhandled error:', err);

@@ -1,10 +1,11 @@
 'use strict';
 
-module.exports = (router) => {
-  router.get('/monthly', (req, res) => {
-    res.status(501).json({ error: 'Monthly report endpoint not implemented' });
-  });
-  router.get('/summary', (req, res) => {
-    res.status(501).json({ error: 'Summary report endpoint not implemented' });
-  });
-};
+var express = require('express');
+var router = express.Router();
+var reportController = require('../controllers/report.controller');
+
+router.get('/monthly', reportController.getMonthlyReport);
+router.get('/summary', reportController.getSummary);
+router.get('/employee/:employeeId', reportController.getEmployeeHistory);
+
+module.exports = router;
