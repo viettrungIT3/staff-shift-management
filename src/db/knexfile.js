@@ -1,4 +1,7 @@
 'use strict';
+
+const path = require('path');
+
 module.exports = {
   development: {
     client: 'mysql2',
@@ -9,7 +12,11 @@ module.exports = {
       password: process.env.DB_PASSWORD || 'duty_pass',
       database: process.env.DB_NAME || 'duty_db'
     },
-    migrations: { directory: './db/migrations' },
-    seeds: { directory: './db/seeds' }
+    migrations: {
+      directory: path.resolve(__dirname, 'migrations')
+    },
+    seeds: {
+      directory: path.resolve(__dirname, 'seeds')
+    }
   }
 };
