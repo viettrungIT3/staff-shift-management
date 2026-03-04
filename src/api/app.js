@@ -21,14 +21,12 @@ var upload = multer({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Health check endpoint
 app.get('/health', async function(req, res) {
   var healthStatus = await health.getHealthStatus();
   var statusCode = healthStatus.status === 'ok' ? 200 : 503;
   res.status(statusCode).json(healthStatus);
 });
 
-// Readiness check
 app.get('/ready', async function(req, res) {
   var dbHealth = await health.checkDatabase();
   if (dbHealth.status === 'healthy') {
@@ -51,7 +49,11 @@ app.use(function(err, req, res, next) {
 
 var PORT = config.port;
 var server = app.listen(PORT, function() {
-  console.log('API listening on port ' + PORT + ' in ' + config.nodeEnv + '  console.log('API listening on port ' + PORT + ' ionsole.log('Received ' + signal + ', shutting down API...');
+  console.log('API listening on port ' + PORT + ' in ' + config.nodeEnv + ' mode');
+});
+
+var shutdown = function(signal) {
+  console.log('Received ' + signal + ', shutting down API...');
   server.close(function() {
     console.log('API shutdown complete');
     process.exit(0);
