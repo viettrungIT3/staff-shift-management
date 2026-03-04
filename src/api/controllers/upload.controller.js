@@ -1,6 +1,6 @@
 'use strict';
 
-const storageService = require('../services/storage.service');
+const rosterService = require('../services/roster.service');
 
 /**
  * Upload roster image
@@ -12,12 +12,13 @@ async function uploadRoster(req, res, next) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
     
-    const result = await storageService.uploadRosterImage(req.file);
+    const result = await rosterService.processRosterImage(req.file);
     
     res.status(201).json({
-      message: 'File uploaded successfully',
+      message: 'File uploaded and processing started',
       imageId: result.imageId,
-      fileUrl: result.fileUrl
+      dutyDate: result.dutyDate,
+      cellCount: result.cells.length
     });
   } catch (err) {
     next(err);
@@ -32,7 +33,7 @@ async function processRoster(req, res, next) {
   try {
     const { imageId } = req.params;
     
-    // TODO: Save to DB and publish to queue
+    // TODO: Implement re-process logic
     res.status(501).json({ 
       error: 'Not implemented',
       imageId 
