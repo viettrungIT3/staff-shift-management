@@ -6,29 +6,27 @@ var db = require('../../shared/db');
 var ocrService = require('./ocr.service');
 var storage = require('../../shared/storage/minio');
 
-var QUEUE_IMAGE_UPLOADED = 'roster.image.uploaded';
-
 async function processRosterImage(file) {
   var config = require('../../shared/config/env');
   
   storage.init(config.minio);
   await storage.ensureBucket(config.minio.bucket);
   
-  var imageId = uuidv4();
   var ext = path.extname(file.originalname);
-  var objectName = 'roster_' + Date.now() + '_' + imageId + ext;
+  var objectName = 'roster_' + Date.now() + '_' + uuidv4() + ext;
   
   await storage.uploadFile(config.minio.bucket, objectName, file.buffer, file.mimetype);
   var fileUrl = await storage.getSignedUrl(config.minio.bucket, objectName);
   
   var dutyDate = ocrService.extractDateFromFilename(file.originalname);
+  var imageId = uuidv4();
   
   // Process OCR
   var cells = await ocrService.processImage(objectName);
   
   // Use transaction for atomic writes
   await db.transaction(async function(trx) {
-    // Insert image record
+    // Insert image record - use string for image_id
     await trx('roster_images').insert({
       image_id: imageId,
       source_type: 'upload',
