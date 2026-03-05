@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ssm-api
+  labels:
+    app: ssm-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: ssm-api
+  template:
+    metadata:
+      labels:
+        app: ssm-api
+    spec:
+      containers:
+      - name: api
+        image: staff-shift-management-api:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: ssm-config
+              key: DB_HOST
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: ssm-secret
+              key: DB_PASSWORD
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ssm-api
+spec:
+  selector:
+    app: ssm-api
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP
