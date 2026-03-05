@@ -4,13 +4,15 @@ var path = require('path');
 var express = require('express');
 var multer = require('multer');
 
-var config = require(path.resolve(__dirname, '../shared/config/env'));
-var health = require('../shared/health');
+var config = require(path.resolve(__dirname, './shared/config/env'));
+var health = require(path.resolve(__dirname, './shared/health'));
 
 var uploadController = require('./controllers/upload.controller');
 var reviewRoutes = require('./routes/review.route');
 var reportRoutes = require('./routes/report.route');
+var authRoutes = require('./routes/auth.route');
 var validator = require('./middleware/validator');
+var authMiddleware = require('./middleware/auth');
 
 var app = express();
 var upload = multer({ 
@@ -36,11 +38,14 @@ app.get('/ready', async function(req, res) {
   }
 });
 
+app.use('/api/v1/auth', authRoutes);
+
+app.use('/api/v1/rosters', authMiddleware.authenticate);
 app.post('/api/v1/rosters/upload', upload.single('image'), validator.validateUpload, uploadController.uploadRoster);
 app.post('/api/v1/rosters/:imageId/process', uploadController.processRoster);
 
-app.use('/api/v1/review', reviewRoutes);
-app.use('/api/v1/reports', reportRoutes);
+app.use('/api/v1/review', authMiddleware.authenticate, reviewRoutes);
+app.use('/api/v1/reports', authMiddleware.authenticate, reportRoutes);
 
 app.use(function(err, req, res, next) {
   console.error('Unhandled error:', err);

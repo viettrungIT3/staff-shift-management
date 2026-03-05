@@ -7,6 +7,10 @@ module.exports = {
   nodeEnv: process.env.NODE_ENV || 'development',
   isProduction: process.env.NODE_ENV === 'production',
   isDevelopment: process.env.NODE_ENV === 'development',
+  jwt: {
+    secret: process.env.JWT_SECRET || 'dev-secret-change-in-production',
+    expiresIn: process.env.JWT_EXPIRES_IN || '24h'
+  },
   db: {
     host: process.env.DB_HOST || '127.0.0.1',
     port: parseInt(process.env.DB_PORT || '3306'),
